@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 
 # Initialize Flask app
 app = Flask(__name__)
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(logging.INFO)
 
 # Initialize tenant handler
 tenant_handler = TenantHandler(app.logger)
@@ -63,7 +63,6 @@ def tile_proxy(path):
         # Prepare headers (remove Host to avoid conflicts)
         headers = {k: v for k, v in request.headers if k.lower() not in ['authorization']}
         headers['X-Forwarded-For'] = request.remote_addr
-        print(headers)
 
         # Log request for debugging (consider reducing in production)
         app.logger.debug(f"Forwarding to: {target_url}")
