@@ -1,13 +1,23 @@
-FROM sourcepole/qwc-uwsgi-base:ubuntu-v2023.05.12
+FROM golang:1.22 AS build
 
-ENV UWSGI_PROCESSES=2
-ENV UWSGI_THREADS=4
+WORKDIR /src
 
-RUN apt-get update
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-ADD ./requirements.txt /srv/qwc_service/requirements.txt
+COPY cmd ./cmd
 
-RUN pip3 install --no-cache-dir -r /srv/qwc_service/requirements.txt
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/mapproxy-auth-proxy ./cmd/mapproxy-auth-proxy
 
-ADD . /srv/qwc_service
 
+FROM gcr.io/distroless/static-debian12:nonroot
+
+ENV PORT=9090
+EXPOSE 9090
+
+COPY --from=build /out/mapproxy-auth-proxy /mapproxy-auth-proxy
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/mapproxy-auth-proxy"]
